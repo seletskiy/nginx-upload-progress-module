@@ -15,6 +15,7 @@ typedef enum {
     uploadprogress_state_error = 1, 
     uploadprogress_state_done = 2, 
     uploadprogress_state_uploading = 3, 
+    uploadprogress_state_not_found = 4,
     uploadprogress_state_none
 } ngx_http_uploadprogress_state_t; 
 
@@ -237,6 +238,7 @@ static ngx_http_uploadprogress_state_map_t ngx_http_uploadprogress_state_map[] =
     {ngx_string("error"),     uploadprogress_state_error},
     {ngx_string("done"),      uploadprogress_state_done},
     {ngx_string("uploading"), uploadprogress_state_uploading},
+    {ngx_string("not_found"), uploadprogress_state_not_found},
     {ngx_null_string,         uploadprogress_state_none},
 };
 
@@ -244,21 +246,24 @@ static ngx_str_t ngx_http_uploadprogress_java_defaults[] = {
     ngx_string("new Object({ 'state' : 'starting' })\r\n"),
     ngx_string("new Object({ 'state' : 'error', 'status' : $uploadprogress_status })\r\n"),
     ngx_string("new Object({ 'state' : 'done' })\r\n"),
-    ngx_string("new Object({ 'state' : 'uploading', 'received' : $uploadprogress_received, 'size' : $uploadprogress_length })\r\n")
+    ngx_string("new Object({ 'state' : 'uploading', 'received' : $uploadprogress_received, 'size' : $uploadprogress_length })\r\n"),
+    ngx_string("new Object({ 'state' : 'not_found' })\r\n")
 };
 
 static ngx_str_t ngx_http_uploadprogress_json_defaults[] = {
     ngx_string("{ \"state\" : \"starting\" }\r\n"),
     ngx_string("{ \"state\" : \"error\", \"status\" : $uploadprogress_status }\r\n"),
     ngx_string("{ \"state\" : \"done\" }\r\n"),
-    ngx_string("{ \"state\" : \"uploading\", \"received\" : $uploadprogress_received, \"size\" : $uploadprogress_length }\r\n")
+    ngx_string("{ \"state\" : \"uploading\", \"received\" : $uploadprogress_received, \"size\" : $uploadprogress_length }\r\n"),
+    ngx_string("{ \"state\" : \"not_found\" }\r\n")
 };
 
 static ngx_str_t ngx_http_uploadprogress_jsonp_defaults[] = {
     ngx_string("$uploadprogress_callback({ \"state\" : \"starting\" });\r\n"),
     ngx_string("$uploadprogress_callback({ \"state\" : \"error\", \"status\" : $uploadprogress_status });\r\n"),
     ngx_string("$uploadprogress_callback({ \"state\" : \"done\" });\r\n"),
-    ngx_string("$uploadprogress_callback({ \"state\" : \"uploading\", \"received\" : $uploadprogress_received, \"size\" : $uploadprogress_length });\r\n")
+    ngx_string("$uploadprogress_callback({ \"state\" : \"uploading\", \"received\" : $uploadprogress_received, \"size\" : $uploadprogress_length });\r\n"),
+    ngx_string("$uploadprogress_callback({ \"state\" : \"not_found\" });\r\n")
 };
 
 
@@ -687,7 +692,7 @@ ngx_http_reportuploads_handler(ngx_http_request_t * r)
  */
 
     if (!found) {
-        state = uploadprogress_state_starting;
+        state = uploadprogress_state_not_found;
     } else if (err_status >= NGX_HTTP_BAD_REQUEST) {
         state = uploadprogress_state_error;
     } else if (done) {
@@ -1254,7 +1259,8 @@ ngx_http_uploadprogress_create_loc_conf(ngx_conf_t * cf)
         return NGX_CONF_ERROR;
     }
 
-    if(ngx_array_init(&conf->templates, cf->pool, 4, sizeof(ngx_http_uploadprogress_template_t)) != NGX_OK) {
+    if(ngx_array_init(&conf->templates, cf->pool, uploadprogress_state_none,
+            sizeof(ngx_http_uploadprogress_template_t)) != NGX_OK) {
         return NGX_CONF_ERROR;
     }
 
@@ -1339,7 +1345,7 @@ ngx_http_uploadprogress_init_variables_and_templates(ngx_conf_t *cf)
     }
 
     /* Compile global templates (containing Javascript output) */
-    if(ngx_array_init(&ngx_http_uploadprogress_global_templates, cf->pool, 4,
+    if(ngx_array_init(&ngx_http_uploadprogress_global_templates, cf->pool, uploadprogress_state_none,
         sizeof(ngx_http_uploadprogress_template_t)) != NGX_OK) {
         return NGX_ERROR;
     }
