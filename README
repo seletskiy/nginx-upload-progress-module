@@ -184,6 +184,36 @@ upload_progress_template
     upload_progress_template done "$uploadprogress_callback({ 'state' : 'done'});";
     upload_progress_template uploading "$uploadprogress_callback({ 'state' : 'uploading', 'received' : $uploadprogress_received, 'size' : $uploadprogress_length });";
 
+upload_progress_use_http_codes
+++++++++++++++++++++++++++++++
+    :Syntax: upload_progress_use_http_codes on|off
+	:Default: off
+	:Context: location
+	:Description:
+	This directive is useful, when you need to forward progress request to another server, like this:
+
+	location /progress/ {
+		upload_progress_use_http_codes on;
+		report_uploads uploads-zone;
+		upload_progress_json_output;
+
+		error_page 404 = @fallback;
+	}
+
+	location @fallback {
+		proxy_pass upload-upstreams;
+		proxy_next_upstream http_404;
+
+		rewrite ^.*$ /upload-fallback/;
+	}
+
+	location /upload-fallback/ {
+		upload_progress_use_http_codes on;
+		report_uploads uploads-zone;
+		upload_progress_json_output;
+	}
+
+
 Configuration Example:
 +++++++++++++++++++++
 

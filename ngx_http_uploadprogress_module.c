@@ -66,6 +66,7 @@ typedef struct {
     ngx_array_t                      templates;
     ngx_str_t                        header;
     ngx_str_t                        jsonp_parameter;
+    ngx_flag_t                       use_http_codes;
 } ngx_http_uploadprogress_conf_t;
 
 typedef struct {
@@ -164,6 +165,13 @@ static ngx_command_t ngx_http_uploadprogress_commands[] = {
      ngx_conf_set_str_slot,
      NGX_HTTP_LOC_CONF_OFFSET,
      offsetof(ngx_http_uploadprogress_conf_t, jsonp_parameter),
+     NULL},
+
+    {ngx_string("upload_progress_use_http_codes"),
+     NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF | NGX_CONF_FLAG,
+     ngx_conf_set_flag_slot,
+     NGX_HTTP_LOC_CONF_OFFSET,
+     offsetof(ngx_http_uploadprogress_conf_t, use_http_codes),
      NULL},
 
     ngx_null_command
@@ -696,6 +704,10 @@ ngx_http_reportuploads_handler(ngx_http_request_t * r)
         t[(ngx_uint_t)state].values->elts) == NULL)
     {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    if (state == uploadprogress_state_not_found && upcf->use_http_codes) {
+        return NGX_HTTP_NOT_FOUND;
     }
 
     ngx_log_debug4(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -1256,6 +1268,8 @@ ngx_http_uploadprogress_create_loc_conf(ngx_conf_t * cf)
         elt->lengths = NULL;
     } 
 
+    conf->use_http_codes = NGX_CONF_UNSET;
+
     return conf;
 }
 
@@ -1297,6 +1311,11 @@ ngx_http_uploadprogress_merge_loc_conf(ngx_conf_t * cf, void *parent, void *chil
 
     ngx_conf_merge_str_value(conf->header, prev->header, "X-Progress-ID");
     ngx_conf_merge_str_value(conf->jsonp_parameter, prev->jsonp_parameter, "callback");
+
+    if (conf->use_http_codes == NGX_CONF_UNSET) {
+        conf->use_http_codes = (prev->use_http_codes != NGX_CONF_UNSET) ?
+            prev->use_http_codes : 0;
+    }
 
     return NGX_CONF_OK;
 }
