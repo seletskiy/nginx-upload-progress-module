@@ -606,7 +606,7 @@ ngx_http_reportuploads_handler(ngx_http_request_t * r)
                        "reportuploads not found: %V", id);
     }
     ngx_shmtx_unlock(&shpool->mutex);
-	ngx_free(id);
+    ngx_free(id);
 
     /* send the output */
     r->headers_out.content_type = upcf->content_type;
@@ -1168,7 +1168,7 @@ ngx_http_uploadprogress_errortracker(ngx_http_request_t * r)
         node = ngx_slab_alloc_locked(shpool, n);
         if (node == NULL) {
             ngx_shmtx_unlock(&shpool->mutex);
-            ngx_free(id);							 
+            ngx_free(id);
             goto finish;
         }
 
@@ -1527,8 +1527,8 @@ ngx_http_upload_progress_set_template(ngx_conf_t * cf, ngx_http_uploadprogress_t
 
     ngx_memzero(&sc, sizeof(ngx_http_script_compile_t));
 
-		t->lengths = NULL;
-		t->values = NULL;
+    t->lengths = NULL;
+    t->values = NULL;
 
     sc.cf = cf;
     sc.source = source;
